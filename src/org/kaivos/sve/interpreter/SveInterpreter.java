@@ -1,8 +1,10 @@
 package org.kaivos.sve.interpreter;
 
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +56,7 @@ import org.kaivos.sve.parser.SveTree.WhileTree;
 public class SveInterpreter {
 
 	public SveScope globalScope;
-	private Random rnd = new Random();
+	Random rnd = new Random();
 	public JavaInterface javaInterface;
 	
 	public SveInterpreter(boolean includeJavaAPI) throws SveVariableNotFoundException, SveRuntimeException {
@@ -141,27 +143,40 @@ public class SveInterpreter {
 				return new SveValue(Type.NIL);
 				
 			}
-		}, globalScope, "print(string): Prints string to the standard output");
-		addJavaFunction("readln", new SveApiFunction() {
+		}, globalScope, "puts(string): Prints string to the standard output without newline");
+		addJavaFunction("putchr", new SveApiFunction() {
 			
 			@Override
 			public SveValue call(SveValue[] args) {
-				String s = "";
-				do {
-					char c = 0;
-					try {
-						c = (char) System.in.read();
-					} catch (IOException e) {
-						e.printStackTrace();
-						break;
-					}
-					if (c == '\n') break;
-					else s += c;
-				} while (true);
-				return new SveValue(s);
+				if (args.length > 0) System.out.print((char) args[0].getValue());
+				return new SveValue(Type.NIL);
 				
 			}
-		}, globalScope, "print(string): Prints string to the standard output");
+		}, globalScope, "putchr(number): Prints character to the standard output");
+		addJavaFunction("readln", new SveApiFunction() {
+			
+			@Override
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				try (BufferedReader r = new BufferedReader(new InputStreamReader(System.in))) {
+					return new SveValue(r.readLine());
+				} catch (IOException e) {
+					e.printStackTrace();
+					throw new SveRuntimeException(-1, ExceptionType.OTHER, e.getMessage());
+				}
+			}
+		}, globalScope, "readln(): Reads line from the standard input");
+		addJavaFunction("readchr", new SveApiFunction() {
+			
+			@Override
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				try (BufferedReader r = new BufferedReader(new InputStreamReader(System.in))) {
+					return new SveValue(r.read());
+				} catch (IOException e) {
+					e.printStackTrace();
+					throw new SveRuntimeException(-1, ExceptionType.OTHER, e.getMessage());
+				}
+			}
+		}, globalScope, "readchr(): Reads character from the standard input");
 		addJavaFunction("str", new SveApiFunction() {
 			
 			@Override
@@ -824,15 +839,18 @@ public class SveInterpreter {
 	}
 	
 	public void setToTable(String name, SveValue val, SveScope scope) throws SveVariableNotFoundException, SveRuntimeException {
-		while (name.contains(".")) {
-			SveValue s = scope.getVar(name.substring(0, name.indexOf('.')));
+		SveScope cScope = scope;
+		String cName = name;
+		
+		while (cName.contains(".")) {
+			SveValue s = cScope.getVar(cName.substring(0, cName.indexOf('.')));
 			if (s == null) {
-				throw new SveVariableNotFoundException(-1, name.substring(0, name.indexOf('.')));
+				throw new SveVariableNotFoundException(-1, cName.substring(0, cName.indexOf('.')));
 			}
-			scope = s.table;
-			name = name.substring(name.indexOf('.')+1);
+			cScope = s.table;
+			cName = cName.substring(cName.indexOf('.')+1);
 		}
-		scope.setLocalVar(name, val);
+		cScope.setLocalVar(cName, val);
 	}
 	
 	public HashMap<String, String> functionHelp = new HashMap<>();
@@ -878,7 +896,7 @@ public class SveInterpreter {
 			for (int j = 0; j < function.parameters.size(); j++) {	// TODO unchecked array
 				if (j >= args.length) s.setLocalVar(function.parameters.get(j).name, new SveValue(Type.NIL));
 				//if (j >= args.length) throw new SveRuntimeException(-1, ExceptionType.WRONG_ARGS, "Wrong number of arguments!");
-				else s.setLocalVar(function.parameters.get(j).name, (SveValue) args[j]);
+				else s.setLocalVar(function.parameters.get(j).name, args[j]);
 			}
 			SveValue f2 = new SveValue(Type.FUNCTION);
 			f2.line = function.line;
@@ -1027,6 +1045,9 @@ public class SveInterpreter {
 								out.println(val.getKey() + "=" + (val.getKey().startsWith("$") ? "{...}" : realtimeReturnVal(val.getValue())));
 							}
 						} while (!sc.variables().containsKey("$parent") && (sc = scope.superScope) != null);
+						break;
+					default:
+						out.print("Valid arguments: local, global, function");	
 					}
 					break;
 				case "sve":
@@ -1053,6 +1074,9 @@ public class SveInterpreter {
 					break loop;
 				case "help":
 					System.err.println("Available commands: breakpoint, dumb, help, next, scope, stack, step, sve");
+					break;
+				default:
+					out.print("Unknown command");	
 					break;
 				}
 			}
@@ -1081,8 +1105,8 @@ public class SveInterpreter {
 			BlockTree t = line.block;
 			SveScope newScope = new SveScope(scope);
 			newScope.setLocalVar("$$", new SveValue(newScope));
-			for (int i = 0; i < t.lines.size(); i++) {
-				SveValue v = interpretLine(t.lines.get(i), newScope);
+			for (LineTree linet : t.lines) {
+				SveValue v = interpretLine(linet, newScope);
 				if (v != null && v.type == Type.BREAK) {
 					return v;
 				}
@@ -1432,12 +1456,12 @@ public class SveInterpreter {
 		case EXPRESSION:
 			return interpretExpression(line.second, scope);
 		case VARIABLE:
-			if (scope.getVar(line.first) != null) {
-				return scope.getVar(line.first);
-			} else {
-				try {
-					return new SveValue(Double.parseDouble(line.first));
-				} catch (NumberFormatException ex) {
+			try {
+				return new SveValue(Double.parseDouble(line.first));
+			} catch (NumberFormatException ex) {
+				if (scope.getVar(line.first) != null) {
+					return scope.getVar(line.first);
+				} else {
 					callStackPush(line.file, line.line);
 					throw new SveVariableNotFoundException(line.line, line.first);
 				}

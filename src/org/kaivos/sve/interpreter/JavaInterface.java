@@ -97,9 +97,10 @@ public class JavaInterface {
 			return java.lang.reflect.Proxy.newProxyInstance(getClassLoader(), new Class<?>[] {t}, new InvocationHandler() {
 				
 				@Override
-				public Object invoke(Object obj, Method m, Object[] args)
+				public Object invoke(Object obj, Method m, Object[] nullableArgs)
 						throws Throwable {
 					if (val.table.getVar(m.getName()) != null) {
+						Object[] args = nullableArgs;
 						if (args == null) args = new Object[0];
 						SveValue[] sveargs = new SveValue[args.length];
 						for (int i = 0; i < args.length; i++) {

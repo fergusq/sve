@@ -12,8 +12,8 @@ public class SveUtil {
 		{
 			return new File[] { new File("/usr/local/lib/sve/") };
 		}
+		default:
+			return new File[] { new File("sve/") };
 		}
-		
-		return new File[] { new File("sve/") };
 	}
 }

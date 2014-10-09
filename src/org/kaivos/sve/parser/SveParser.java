@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,6 +12,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.ArrayList;
 import java.util.Set;
+
+import jline.ConsoleReader;
 
 import org.kaivos.sc.TokenScanner;
 import org.kaivos.stg.error.SyntaxError;
@@ -27,9 +28,9 @@ import org.kaivos.sve.parser.SveTree.StartTree;
 public class SveParser {
 	
 	private static SveInterpreter inter;
-	public static final String SVE_VERSION = "Sve 1.3 Realtime Interpreter - (c) 2014 Iikka Hauhio - All rights reserved";
+	public static final String SVE_VERSION = "Sve 1.5 Realtime Interpreter - (c) 2014 Iikka Hauhio - All rights reserved";
 	
-	public static final char[] OPERATORS = new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '=', '&', '|', '{', '}', '.', '!', '[', ']', '$'};
+	public static final char[] OPERATORS = new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '=', '&', '|', '{', '}', '.', '!', '[', ']'};
 	public static final String[] OPERATORS2 = new String[]{"->", "=>", "==", "!=", "&&", "||", "<=", ">=", "++", "--", "::"};
 	
 	/**
@@ -40,6 +41,7 @@ public class SveParser {
 	public static void main(String[] args) throws SveVariableNotFoundException, SveRuntimeException {
 		
 		inter = new SveInterpreter(true);
+		
 		
 		String file = "<stdin>";
 		List<String> sveargs = new ArrayList<>();
@@ -88,7 +90,7 @@ public class SveParser {
 			inter.globalScope.setLocalVar("@"+(i+1), new SveValue(sveargs.get(i)));
 		}
 
-		inter.globalScope.setLocalVar("@@", inter.javaInterface.sve_GetFromJavaObject((String[]) sveargs.toArray(new String[sveargs.size()])));
+		inter.globalScope.setLocalVar("@@", inter.javaInterface.sve_GetFromJavaObject(sveargs.toArray(new String[sveargs.size()])));
 		
 		if (file.equals("<stdin>")) {
 			try {
@@ -99,21 +101,14 @@ public class SveParser {
 			return;
 		}
 		
-		
-		BufferedReader in = null;
-		try {
-			in = new BufferedReader(new FileReader(new File(file)));
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-			return;
-		}
-		
 		String textIn = "";
-		try {
+		
+		try (BufferedReader in = new BufferedReader(new FileReader(new File(file)))) {
 			while (in.ready()) textIn += in.readLine() + "\n";
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			return;
+		} catch (FileNotFoundException e2) {
+			e2.printStackTrace();
+		} catch (IOException e2) {
+			e2.printStackTrace();
 		}
 		
 		TokenScanner s = new TokenScanner();
@@ -127,11 +122,6 @@ public class SveParser {
 		
 		try {
 			tree.parse(s);
-			try {
-				in.close();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
 			
 			try {
 				inter.interpret(tree);
@@ -160,7 +150,10 @@ public class SveParser {
 	}
 	
 	private static void openRealtimeInterpreter() throws IOException, SveVariableNotFoundException, SveRuntimeException {
-		BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+		ConsoleReader r = new ConsoleReader();
+        r.setBellEnabled(false);
+		
+		//BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
 		final PrintStream o = System.out;
 		
 		inter.addJavaFunction("help", new SveApiFunction() {
@@ -234,10 +227,10 @@ public class SveParser {
 		String line = "";
 		boolean addMode = false;
 		
-		o.print("> ");
+		//o.print("> ");
 		while (!exit.exit) {
-			if (!addMode) line = r.readLine();
-			else line += "\n" + r.readLine();
+			if (!addMode) line = r.readLine("> ");
+			else line += "\n" + r.readLine(">>> ");
 			if (line == null) break;
 			if (line.equals("exit")) {
 				o.println("Use `exit()' or Control-D to exit.");
@@ -262,7 +255,7 @@ public class SveParser {
 				
 				if (e.getToken().equals("<EOF>")) {
 					addMode = true;
-					o.print(">> ");
+					//o.print(">> ");
 					continue;
 				} else addMode = false;
 					
@@ -281,7 +274,7 @@ public class SveParser {
 			
 			if (exit.exit) break;
 			
-			o.print("> ");
+			//o.print("> ");
 		}
 	}
 
@@ -291,20 +284,14 @@ public class SveParser {
 	}
 	
 	public static SveTree.StartTree parse(File file) {
-		BufferedReader in = null;
-		try {
-			in = new BufferedReader(new FileReader(file));
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-			return null;
-		}
-		
 		String textIn = "";
-		try {
+		
+		try (BufferedReader in = new BufferedReader(new FileReader(file))) {
 			while (in.ready()) textIn += in.readLine() + "\n";
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			return null;
+		} catch (FileNotFoundException e2) {
+			e2.printStackTrace();
+		} catch (IOException e2) {
+			e2.printStackTrace();
 		}
 		
 		TokenScanner s = new TokenScanner();
@@ -318,22 +305,12 @@ public class SveParser {
 		
 		try {
 			tree.parse(s);
-			try {
-				in.close();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
 			return tree;
 		} catch (UnexpectedTokenSyntaxError e) {
 			printError(s, e);
 		} catch (SyntaxError e) {
 			printError(s, e);
 		} 
-		try {
-			in.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 		return null;
 	}
 	
@@ -377,9 +354,9 @@ public class SveParser {
 				+ s.getLine(e.getLine() - 1).trim() + "'");
 	}
 	
-	public static void printError(SveInterpreter inter, SveRuntimeException e) {
+	public static void printError(SveInterpreter interpreter, SveRuntimeException e) {
 		System.err.println("[E] " + e.getMessage());
-		inter.printStackTrace();
-		inter.callStack.clear();
+		interpreter.printStackTrace();
+		interpreter.callStack.clear();
 	}
 }

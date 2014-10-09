@@ -28,9 +28,11 @@ public class SveApplet extends JApplet {
 		}
 	}
 	
+	@Override
 	public void init() {
 		try {
 			SwingUtilities.invokeAndWait(new Runnable() {
+				@Override
 				public void run() {
 					
 					JTextArea output = new JTextArea();

@@ -2,6 +2,8 @@ package org.kaivos.sve.parser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.kaivos.parsertools.ParserTree;
 import org.kaivos.sc.TokenScanner;
@@ -19,8 +21,8 @@ public class SveTree extends ParserTree {
 	 */
 	public static class StartTree extends TreeNode {
 		
-		public ArrayList<LineTree> lines = new ArrayList<LineTree>();
-		public ArrayList<FunctionTree> functions = new ArrayList<FunctionTree>();
+		public List<LineTree> lines = new LinkedList<LineTree>();
+		public List<FunctionTree> functions = new LinkedList<FunctionTree>();
 		
 		@Override
 		public void parse(TokenScanner s) throws SyntaxError {
@@ -88,7 +90,7 @@ public class SveTree extends ParserTree {
 					else
 						accept(")", s);
 				} else {
-					
+					//
 				}
 
 				line = new LineTree();
@@ -283,7 +285,7 @@ public class SveTree extends ParserTree {
 	public static class BlockTree extends TreeNode {
 
 		public ExpressionTree condition;
-		public ArrayList<LineTree> lines = new ArrayList<LineTree>();
+		public List<LineTree> lines = new LinkedList<LineTree>();
 		
 		@Override
 		public void parse(TokenScanner s) throws SyntaxError {
@@ -511,9 +513,9 @@ public class SveTree extends ParserTree {
 				
 				line = s.line()+1;
 				
-				String operator;
-				label1: while (Arrays.asList("[", ":", ".", "(", "::", "->").contains((operator = seek(s))) || (op.size() > 0 && seek(s).equals("="))){
-					switch (operator) {
+				String operatorName;
+				label1: while (Arrays.asList("[", ":", ".", "(", "::", "->").contains((operatorName = seek(s))) || (op.size() > 0 && seek(s).equals("="))){
+					switch (operatorName) {
 					case "[":
 						op.add(next(s));
 						this.operator = Operator.OPERATOR;
@@ -646,9 +648,9 @@ public class SveTree extends ParserTree {
 			
 			line = s.line()+1;
 			
-			String operator;
-			label1: while (Arrays.asList(new String[]{"->", ":", ".", "::", "["}).contains((operator = seek(s)))){
-				switch (operator) {
+			String operatorName;
+			label1: while (Arrays.asList(new String[]{"->", ":", ".", "::", "["}).contains((operatorName = seek(s)))){
+				switch (operatorName) {
 				case "[":
 					op.add(next(s));
 					this.operator = Operator.OPERATOR;
@@ -750,9 +752,9 @@ public class SveTree extends ParserTree {
 			first = new Expression2Tree();
 			first.parse(s);
 			
-			String operator;
-			label1: while (Arrays.asList(new String[]{"*", "/", "%"}).contains((operator = seek(s)))){
-				switch (operator) {
+			String operatorName;
+			label1: while (Arrays.asList(new String[]{"*", "/", "%"}).contains((operatorName = seek(s)))){
+				switch (operatorName) {
 				case "*":
 				case "/":
 				case "%":
@@ -806,9 +808,9 @@ public class SveTree extends ParserTree {
 		}
 
 		private void parse_(TokenScanner s) throws SyntaxError {
-			String operator;
-			label1: while (Arrays.asList(new String[]{"+", "-"}).contains((operator = seek(s)))){
-				switch (operator) {
+			String operatorName;
+			label1: while (Arrays.asList(new String[]{"+", "-"}).contains((operatorName = seek(s)))){
+				switch (operatorName) {
 				case "+":
 				case "-":
 					op.add(next(s));
@@ -856,9 +858,9 @@ public class SveTree extends ParserTree {
 			first = new ExpressionLogicTree();
 			first.parse(s);
 			
-			String operator;
-			label1: while (Arrays.asList(new String[]{"&&", "||"}).contains((operator = seek(s)))){
-			switch (operator) {
+			String operatorName;
+			label1: while (Arrays.asList(new String[]{"&&", "||"}).contains((operatorName = seek(s)))){
+			switch (operatorName) {
 			case "&&":
 			case "||":
 				op.add(next(s));
@@ -896,9 +898,9 @@ public class SveTree extends ParserTree {
 			OPERATOR
 		}
 		public Operator operator = Operator.NEXT;
-		public ArrayList<String> op = new ArrayList<>();
+		public List<String> op = new ArrayList<>();
 		public Expression0Tree first;
-		public ArrayList<Expression0Tree> second = new ArrayList<>();
+		public List<Expression0Tree> second = new ArrayList<>();
 		
 		@SuppressWarnings("unused")
 		@Override
@@ -907,9 +909,9 @@ public class SveTree extends ParserTree {
 			first = new Expression0Tree();
 			first.parse(s);
 			
-			String operator;
-			label1: while (Arrays.asList(new String[]{"==", "<", "<=", ">", ">=", "!="}).contains((operator = seek(s)))){
-			switch (operator) {
+			String operatorName;
+			label1: while (Arrays.asList(new String[]{"==", "<", "<=", ">", ">=", "!="}).contains((operatorName = seek(s)))){
+			switch (operatorName) {
 			case "==":
 			case "<":
 			case "<=":
@@ -1131,18 +1133,11 @@ public class SveTree extends ParserTree {
 			if (Character.isDigit(first.charAt(0)) && seek(s, 1).equals(".") && Character.isDigit(seek(s,2).charAt(0))) {
 				accept(".", s);
 				first = first + "." + next(s);
-			} else if (seek(s).equals("$")) {
-				accept("$", s);
-				first += "$";
-				if (seek(s).equals("$")) {
-					accept("$", s);
-					first = "$" + next(s);
-				}
 			}
 			
-			String operator = seek(s);
+			String operatorName = seek(s);
 
-			if (operator.equals("=")) {	
+			if (operatorName.equals("=")) {	
 				this.operator = Operator.ASSIGN;
 				
 				accept("=", s);
@@ -1173,7 +1168,7 @@ public class SveTree extends ParserTree {
 					if (accept(new String[]{"}]", ","}, s).equals("}]")) break;
 				} else accept("}]", s);
 				return;
-			} */else if (operator.equals("++") || operator.equals("--")) {
+			} */else if (operatorName.equals("++") || operatorName.equals("--")) {
 				this.operator = Operator.POSTFIX;
 				fix = accept(new String[]{"++", "--"}, s);
 				return;
