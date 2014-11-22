@@ -102,6 +102,8 @@ public class SveValue {
 		this.value = value;
 	}
 
+	private int recursionLevel = 0;
+	
 	public String getValue_str() {
 		if (type == Type.DOUBLE && ((int)value) == value) return "" + (int)value;
 		if (type == Type.DOUBLE && ((int)value) != value) return "" + value;
@@ -130,7 +132,12 @@ public class SveValue {
 
 			});
 			return list.toString();*/
-			return table.variables.toString();
+			recursionLevel++;
+			String a = "{...}";
+			if (recursionLevel < 10)
+				a = table.variables.toString();
+			recursionLevel--;
+			return a;
 		}
 		
 		if (type == Type.BOOLEAN) return value_bool ? "true" : "false";

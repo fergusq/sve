@@ -153,11 +153,39 @@ public class SveInterpreter {
 				
 			}
 		}, globalScope, "putchr(number): Prints character to the standard output");
+		addJavaFunction("errprint", new SveApiFunction() {
+			
+			@Override
+			public SveValue call(SveValue[] args) {
+				if (args.length > 0) System.err.println(args[0].getValue_str());
+				return new SveValue(Type.NIL);
+				
+			}
+		}, globalScope, "errprint(string): Prints string to the standard error");
+		addJavaFunction("errputs", new SveApiFunction() {
+			
+			@Override
+			public SveValue call(SveValue[] args) {
+				if (args.length > 0) System.err.print(args[0].getValue_str());
+				return new SveValue(Type.NIL);
+				
+			}
+		}, globalScope, "errputs(string): Prints string to the standard error without newline");
+		addJavaFunction("errputchr", new SveApiFunction() {
+			
+			@Override
+			public SveValue call(SveValue[] args) {
+				if (args.length > 0) System.err.print((char) args[0].getValue());
+				return new SveValue(Type.NIL);
+				
+			}
+		}, globalScope, "errputchr(number): Prints character to the standard error");
 		addJavaFunction("readln", new SveApiFunction() {
 			
 			@Override
 			public SveValue call(SveValue[] args) throws SveRuntimeException {
-				try (BufferedReader r = new BufferedReader(new InputStreamReader(System.in))) {
+				try {
+					BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
 					return new SveValue(r.readLine());
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -169,7 +197,8 @@ public class SveInterpreter {
 			
 			@Override
 			public SveValue call(SveValue[] args) throws SveRuntimeException {
-				try (BufferedReader r = new BufferedReader(new InputStreamReader(System.in))) {
+				try {
+					BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
 					return new SveValue(r.read());
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -760,7 +789,8 @@ public class SveInterpreter {
 	
 	public void printStackTrace() {	
 		for (int i = callStack.size()-1; i >= 0; i--) {
-			System.err.println("\t" + callStack.get(i));
+			String position = callStack.get(i) == null ? "<unknown>" : callStack.get(i);
+			System.err.println("\t" + position);
 		}
 	}
 	
@@ -858,6 +888,7 @@ public class SveInterpreter {
 	public void addJavaFunction(String name, SveApiFunction m, SveScope scope, String help) {
 		SveValue l = new SveValue(Type.FUNCTION_JAVA);
 		l.method = m;
+		l.fname = name;
 		try {
 			setToTable(name, l, scope);
 		} catch (SveVariableNotFoundException e) {
@@ -1370,7 +1401,7 @@ public class SveInterpreter {
 					SveValue second =  interpretPrimary(line.second.get(i), scope);
 					
 					if (i < line.op.size()-1 && line.op.get(i+1).equals(":")) {
-						value = value.table.setVar(second.getValue_str(), interpretExpression(line.exp, scope));
+						value.table.setVar(second.getValue_str(), value = interpretExpression(line.exp, scope));
 					} else {
 						value = value.table.getVar(second.getValue_str());
 						if (value == null) {
@@ -1459,8 +1490,9 @@ public class SveInterpreter {
 			try {
 				return new SveValue(Double.parseDouble(line.first));
 			} catch (NumberFormatException ex) {
-				if (scope.getVar(line.first) != null) {
-					return scope.getVar(line.first);
+				SveValue val = scope.getVar(line.first);
+				if (val != null) {
+					return val;
 				} else {
 					callStackPush(line.file, line.line);
 					throw new SveVariableNotFoundException(line.line, line.first);

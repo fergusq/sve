@@ -76,11 +76,11 @@ public class SveParser {
 				System.out.println("--help      --··--");
 				System.out.println("-v          Prints the version number");
 				System.out.println("--version   --··--");
-				break;
+				return;
 			case "-v":
 			case "--version":
 				System.out.println(SVE_VERSION);
-				break;
+				return;
 			default:
 				sveargs.add(args[i]);
 			}
@@ -136,8 +136,10 @@ public class SveParser {
 			printError(s, e);
 		} catch (SyntaxError e) {
 			printError(s, e);
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Throwable ex) {
+			ex.printStackTrace();
+			inter.printStackTrace();
+			inter.callStack.clear();
 		}
 		
 		
