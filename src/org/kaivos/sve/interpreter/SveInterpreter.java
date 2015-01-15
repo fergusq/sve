@@ -929,13 +929,14 @@ public class SveInterpreter {
 				//if (j >= args.length) throw new SveRuntimeException(-1, ExceptionType.WRONG_ARGS, "Wrong number of arguments!");
 				else s.setLocalVar(function.parameters.get(j).name, args[j]);
 			}
-			SveValue f2 = new SveValue(Type.FUNCTION);
-			f2.line = function.line;
-			f2.parameters = function.parameters;
-			f2.localScope = function.localScope;
 			s.setLocalVar("$$", new SveValue(s));
-			s.setLocalVar("$self", f2);
-			s.setLocalVar("$parent", new SveValue(scope));
+			
+			s.setLocalVar("$self", function);
+			s.setLocalVar("$s", function);
+			
+			SveValue parent = new SveValue(scope);
+			s.setLocalVar("$parent", parent);
+			s.setLocalVar("$p", parent);
 			
 			if (self != null) {
 				s.setLocalVar("$obj", self);
@@ -947,6 +948,7 @@ public class SveInterpreter {
 				args1.table.setVar(""+j, args[j]);
 			}
 			s.setLocalVar("$args", args1);
+			s.setLocalVar("$a", args1);
 			
 			s.setLocalVar("$freturn", new SveValue(Type.NIL));
 			returnValue = null;
@@ -1077,8 +1079,10 @@ public class SveInterpreter {
 							}
 						} while (!sc.variables().containsKey("$parent") && (sc = scope.superScope) != null);
 						break;
+					case "help":
 					default:
-						out.print("Valid arguments: local, global, function");	
+						out.print("Valid arguments: local, global, function, help");
+						break;
 					}
 					break;
 				case "sve":
@@ -1230,14 +1234,14 @@ public class SveInterpreter {
 				switch (line.op.get(i)) {
 				case "||":
 					{
-						if (value.getValue_bool()) value = new SveValue(true);
-						else value = new SveValue(interpretExpressionLogic(line.second.get(i), scope).getValue_bool());
+						if (value.getValue_bool()) /* value = value*/;
+						else value = new SveValue(interpretExpressionLogic(line.second.get(i), scope));
 					}
 					break;
 				case "&&":
 					{
-						if (!value.getValue_bool()) value = new SveValue(false);
-						else value = new SveValue(interpretExpressionLogic(line.second.get(i), scope).getValue_bool());
+						if (!value.getValue_bool()) /*value = value*/;
+						else value = new SveValue(interpretExpressionLogic(line.second.get(i), scope));
 					}
 					break;
 
