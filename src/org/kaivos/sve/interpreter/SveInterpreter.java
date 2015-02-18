@@ -1235,13 +1235,13 @@ public class SveInterpreter {
 				case "||":
 					{
 						if (value.getValue_bool()) /* value = value*/;
-						else value = new SveValue(interpretExpressionLogic(line.second.get(i), scope));
+						else value = interpretExpressionLogic(line.second.get(i), scope);
 					}
 					break;
 				case "&&":
 					{
 						if (!value.getValue_bool()) /*value = value*/;
-						else value = new SveValue(interpretExpressionLogic(line.second.get(i), scope));
+						else value = interpretExpressionLogic(line.second.get(i), scope);
 					}
 					break;
 
