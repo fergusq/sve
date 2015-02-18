@@ -297,7 +297,7 @@ public class SveParser {
 		}
 		
 		TokenScanner s = new TokenScanner();
-		s.setSpecialTokens(new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '=', '&', '|', '{', '}', '.', '!', '[', ']', '$'});
+		s.setSpecialTokens(new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '=', '&', '|', '{', '}', '.', '!', '[', ']'});
 		s.setBSpecialTokens(new String[]{"->", "=>", "==", "!=", "&&", "||", "<=", ">=", "++", "--", "::"});
 		s.setComments(true);
 		s.setFile(file.getAbsolutePath());
