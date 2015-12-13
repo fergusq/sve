@@ -30,7 +30,7 @@ public class JavaInterface {
 
 	public SveValue sve_GetFromJavaObject(final Object o) {
 		
-		if (o == null) return null;
+		if (o == null) return new SveValue(Type.NIL);
 		if (o.getClass().isPrimitive()) {
 			switch (o.getClass().getName()) {
 			case "byte":
