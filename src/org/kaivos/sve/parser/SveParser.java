@@ -15,7 +15,7 @@ import org.kaivos.sve.parser.SveTree.StartTree;
 
 public class SveParser {
 	
-	public static final String SVE_VERSION = "Sve 1.5 Realtime Interpreter - (c) 2014 Iikka Hauhio - All rights reserved";
+	public static final String SVE_VERSION = "Sve 1.6 Realtime Interpreter - (c) 2015 Iikka Hauhio - All rights reserved";
 	
 	public static final char[] OPERATORS = new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '=', '&', '|', '{', '}', '.', '!', '[', ']'};
 	public static final String[] OPERATORS2 = new String[]{"->", "=>", "==", "!=", "&&", "||", "<=", ">=", "++", "--", "::"};

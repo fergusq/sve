@@ -3,6 +3,7 @@ package org.kaivos.sve.interpreter;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -67,19 +68,37 @@ public class SveInterpreter {
 		addJavaFunction("sethelp", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
-				functionHelp.put(args[0].getValue_str(), args[1].getValue_str());
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("sethelp", 2, args.length);
+				String name;
+				if ((args[0].type == Type.FUNCTION || args[0].type == Type.FUNCTION_JAVA) && args[0].fname != null) {
+					name = args[0].fname;
+				} else name = args[0].getValue_str();
+				functionHelp.put(args[0].getValue_str(), name);
 				return new SveValue(Type.NIL);
 				
 			}
-		}, globalScope, "sethelp(function_name, string): Set's help text");
+		}, globalScope, "sethelp(function_name, string): Sets a help text for a function");
+		
+		addJavaFunction("gethelp", new SveApiFunction() {
+			
+			@Override
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("gethelp", 1, args.length);
+				String name;
+				if ((args[0].type == Type.FUNCTION || args[0].type == Type.FUNCTION_JAVA) && args[0].fname != null) {
+					name = args[0].fname;
+				} else name = args[0].getValue_str();
+				return new SveValue(functionHelp.get(name));
+				
+			}
+		}, globalScope, "gethelp(function_name): Returns the help text of the function");
 		
 		addJavaFunction("include", new SveApiFunction() {
 			
 			@Override
 			public SveValue call(SveValue[] args) throws SveVariableNotFoundException, SveRuntimeException {
-				if (args.length < 1) return new SveValue(Type.NIL);
+				checkArgs("include", 1, args.length);
 				interpret(SveParser.parse(args[0].getValue_str()));
 				return new SveValue(Type.NIL);
 				
@@ -91,7 +110,8 @@ public class SveInterpreter {
 			
 			@Override
 			public SveValue call(SveValue[] args) throws SveVariableNotFoundException, SveRuntimeException {
-				if (args.length < 1 || required.contains(args[0].getValue_str())) return new SveValue(Type.NIL);
+				checkArgs("require", 1, args.length);
+				if (required.contains(args[0].getValue_str())) return new SveValue(Type.NIL);
 				required.add(args[0].getValue_str());
 				File f = null;
 				int i = 0;
@@ -110,7 +130,7 @@ public class SveInterpreter {
 			
 			@Override
 			public SveValue call(SveValue[] args) throws SveVariableNotFoundException, SveRuntimeException {
-				if (args.length < 1) return new SveValue(Type.NIL);
+				checkArgs("eval", 1, args.length);
 				
 				SveScope scope = globalScope;
 				if (args.length == 2) {
@@ -131,15 +151,17 @@ public class SveInterpreter {
 			@Override
 			public SveValue call(SveValue[] args) {
 				if (args.length > 0) System.out.println(args[0].getValue_str());
+				else System.out.println();
 				return new SveValue(Type.NIL);
 				
 			}
-		}, globalScope, "print(string): Prints string to the standard output");
+		}, globalScope, "print([string=\"\"]): Prints string to the standard output");
 		addJavaFunction("puts", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length > 0) System.out.print(args[0].getValue_str());
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("puts", 1, args.length);
+				System.out.print(args[0].getValue_str());
 				return new SveValue(Type.NIL);
 				
 			}
@@ -147,8 +169,9 @@ public class SveInterpreter {
 		addJavaFunction("putchr", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length > 0) System.out.print((char) args[0].getValue());
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("putchr", 1, args.length);
+				System.out.print((char) args[0].getValue());
 				return new SveValue(Type.NIL);
 				
 			}
@@ -156,17 +179,19 @@ public class SveInterpreter {
 		addJavaFunction("errprint", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
 				if (args.length > 0) System.err.println(args[0].getValue_str());
+				else System.err.println();
 				return new SveValue(Type.NIL);
 				
 			}
-		}, globalScope, "errprint(string): Prints string to the standard error");
+		}, globalScope, "errprint([string=\"\"]): Prints string to the standard error");
 		addJavaFunction("errputs", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length > 0) System.err.print(args[0].getValue_str());
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("errputs", 1, args.length);
+				System.err.print(args[0].getValue_str());
 				return new SveValue(Type.NIL);
 				
 			}
@@ -174,8 +199,9 @@ public class SveInterpreter {
 		addJavaFunction("errputchr", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length > 0) System.err.print((char) args[0].getValue());
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("errputchr", 1, args.length);
+				System.err.print((char) args[0].getValue());
 				return new SveValue(Type.NIL);
 				
 			}
@@ -209,17 +235,17 @@ public class SveInterpreter {
 		addJavaFunction("str", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length > 0) return new SveValue(args[0].getValue_str());
-				return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("str", 1, args.length);
+				return new SveValue(args[0].getValue_str());
 			}
-		}, globalScope, "str(number): Returns the string representation of the number");
+		}, globalScope, "str(value): Returns the string representation of the value");
 		addJavaFunction("number", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length > 0) return new SveValue(Double.parseDouble(args[0].getValue_str()));
-				return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("number", 1, args.length);
+				return new SveValue(Double.parseDouble(args[0].getValue_str()));
 			}
 		}, globalScope, "number(string): Parsers a float number from a string");
 		addJavaFunction("sysclock", new SveApiFunction() {
@@ -230,10 +256,10 @@ public class SveInterpreter {
 		}, globalScope, "sysclock(): Returns the system time in milliseconds");
 		addJavaFunction("pcall", new SveApiFunction() {
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("pcall", 1, args.length);
 				if (args[0].type != Type.FUNCTION) {
-					return new SveValue(Type.NIL);
+					wrongArgs("pcall: the first argument must be a function");
 				}
 				try {
 					SveValue val = new SveValue(true);
@@ -271,7 +297,7 @@ public class SveInterpreter {
 		addJavaFunction("raise", new SveApiFunction() {
 			@Override
 			public SveValue call(SveValue[] args) throws SveRuntimeException {
-				if (args.length < 1) return new SveValue(Type.NIL);
+				checkArgs("raise", 1, args.length);
 				throw new SveRaiseException(-1, args[0]);
 				
 			}
@@ -279,9 +305,9 @@ public class SveInterpreter {
 		addJavaFunction("acall", new SveApiFunction() {
 			@Override
 			public SveValue call(SveValue[] args) throws SveVariableNotFoundException, SveRuntimeException {
-				if (args.length < 2) return new SveValue(Type.NIL);
+				checkArgs("acall", 2, args.length);
 				if (args[0].type != Type.FUNCTION && args[0].type != Type.FUNCTION_JAVA) {
-					return new SveValue(Type.NIL);
+					wrongArgs("acall: the first argument must be a function");
 				}
 				int length = 0;
 				List<SveValue> vals = new ArrayList<SveValue>();
@@ -293,20 +319,18 @@ public class SveInterpreter {
 		addJavaFunction("rnd", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length > 0) return new SveValue(rnd.nextInt((int) args[0].getValue()));
-				return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("rnd", 1, args.length);
+				return new SveValue(rnd.nextInt((int) args[0].getValue()));
 			}
 		}, globalScope, "rnd(max): Returns a new random number");
 		addJavaFunction("type", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				SveValue v = null;
-				if (args.length > 0) v = args[0];
-				else return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("type", 1, args.length);
 				
-				switch (v.type) {
+				switch (args[0].type) {
 				case FUNCTION:
 					return new SveValue("function");
 				case DOUBLE:
@@ -333,20 +357,18 @@ public class SveInterpreter {
 		addJavaFunction("hash", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				SveValue v = null;
-				if (args.length > 0) v = args[0];
-				else return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("hash", 1, args.length);
 				
-				return new SveValue(v.hashCode());
+				return new SveValue(args[0].hashCode());
 			}
 		}, globalScope, "hash(obj): Returns the hash code of the object");
 		
 		addJavaFunction("pow", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("pow", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -360,8 +382,8 @@ public class SveInterpreter {
 		addJavaFunction("andb", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("andb", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -374,8 +396,8 @@ public class SveInterpreter {
 		addJavaFunction("orb", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("orb", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -388,8 +410,8 @@ public class SveInterpreter {
 		addJavaFunction("xorb", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("xorb", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -402,8 +424,8 @@ public class SveInterpreter {
 		addJavaFunction("shlb", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("shlb", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -416,8 +438,8 @@ public class SveInterpreter {
 		addJavaFunction("shrb", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("shrb", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -430,8 +452,8 @@ public class SveInterpreter {
 		addJavaFunction("ushrb", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("ushrb", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -445,8 +467,8 @@ public class SveInterpreter {
 		addJavaFunction("charat", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("charat", 2, args.length);
 				SveValue v;
 				v = args[0];
 				
@@ -458,37 +480,37 @@ public class SveInterpreter {
 		}, globalScope, "charat(string, index): Returns the character at the index");
 		addJavaFunction("chr", new SveApiFunction() {
 			@Override
-			public SveValue call(SveValue[] arg0) {
-				if (arg0.length < 1) return new SveValue(Type.NIL);
-				return new SveValue("" + (char) arg0[0].getValue());
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("chr", 1, args.length);
+				return new SveValue("" + (char) args[0].getValue());
 			}
 		}, globalScope, "chr(chr_id): Returns a string that contains the right character");
 		
 		addJavaFunction("strlen", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("strlen", 1, args.length);
 				return new SveValue(args[0].getValue_str().length());
 			}
 		}, globalScope, "strlen(string): Returns the length of the string");
 		addJavaFunction("substr", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("substr", 2, args.length);
 				if (args.length == 2)
 					return new SveValue(args[0].getValue_str().substring((int) args[1].getValue()));
 				
 				return new SveValue(args[0].getValue_str().substring((int) args[1].getValue(), (int)args[2].getValue()));
 			}
-		}, globalScope, "substr(string, start, end): Creates a new substring from the parameter string");
+		}, globalScope, "substr(string, start, [end]): Creates a new substring from the parameter string");
 		
 		addJavaFunction("split", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("split", 2, args.length);
 				
 				String[] splitted = args[0].getValue_str().split(args[1].getValue_str());
 				
@@ -506,8 +528,8 @@ public class SveInterpreter {
 		addJavaFunction("toupper", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("toupper", 1, args.length);
 				return new SveValue(args[0].getValue_str().toUpperCase());
 			}
 		}, globalScope, "toupper(string): Changes all characters to upper case");
@@ -515,8 +537,8 @@ public class SveInterpreter {
 		addJavaFunction("tolower", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("tolower", 1, args.length);
 				return new SveValue(args[0].getValue_str().toLowerCase());
 			}
 		}, globalScope, "tolower(string): Changes all characters to lower case");
@@ -537,7 +559,7 @@ public class SveInterpreter {
 			
 			@Override
 			public SveValue call(SveValue[] args) throws SveVariableNotFoundException, SveRuntimeException {
-				if (args.length < 1) return new SveValue(Type.NIL);
+				checkArgs("len", 1, args.length);
 				int length = 0;
 				while (args[0].table.getVar((length++)+"") != null && args[0].table.getVar((length-1)+"").type != Type.NIL);
 				return new SveValue(length-1);
@@ -546,8 +568,8 @@ public class SveInterpreter {
 		addJavaFunction("keys", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("keys", 1, args.length);
 				
 				Collection<String> values = args[0].table.variables().keySet();
 				
@@ -562,8 +584,8 @@ public class SveInterpreter {
 		addJavaFunction("values", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("values", 1, args.length);
 				
 				Collection<SveValue> values = args[0].table.variables().values();
 				
@@ -578,51 +600,51 @@ public class SveInterpreter {
 		addJavaFunction("defined", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("defined", 1, args.length);
 				if (args.length == 1) {
 					return new SveValue((globalScope.variables().containsKey(args[0].getValue_str()))?true:false);
 				}
 				return new SveValue((args[0].table.variables().containsKey(args[1].getValue_str()))?true:false);
 			}
-		}, globalScope, "defined(table, index): Contains the parameter table the parameter index");
+		}, globalScope, "defined([table=$], index): Contains the parameter table the parameter index");
 		addJavaFunction("define", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("define", 2, args.length);
 				if (args.length == 2) {
 					globalScope.variables().put(args[0].getValue_str(), args[1]);
 				}
 				args[0].table.variables().put(args[1].getValue_str(), args[2]);
 				return args[0];
 			}
-		}, globalScope, "define(table, index, val): Adds a new index to the parameter table");
+		}, globalScope, "define([table=$], index, val): Adds a new index to the parameter table");
 		addJavaFunction("undefine", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("undefine", 1, args.length);
 				if (args.length == 1) {
 					globalScope.variables().remove(args[0].getValue_str());
 				}
 				args[0].table.variables().remove(args[1].getValue_str());
 				return new SveValue(Type.NIL);
 			}
-		}, globalScope, "undefine(table, index): Removes an index from the paremeter table");
+		}, globalScope, "undefine([table=$], index): Removes an index from the paremeter table");
 		addJavaFunction("new", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("new", 1, args.length);
 				return args[0].copy();
 			}
 		}, globalScope, "new(table): Creates a new copy of the parameter table");
 		addJavaFunction("setpt", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("setpt", 2, args.length);
 				args[0].table.prototypeScope = args[1].type == Type.NIL ? null : args[1].table;
 				return args[0];
 			}
@@ -630,8 +652,8 @@ public class SveInterpreter {
 		addJavaFunction("getpt", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("getpt", 1, args.length);
 				return new SveValue(args[0].table.prototypeScope);
 			}
 		}, globalScope, "getpt(table): Returns the prototype of the parameter table");
@@ -639,8 +661,8 @@ public class SveInterpreter {
 		addJavaFunction("setsup", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("setsup", 2, args.length);
 				args[0].table.superScope = args[1].type == Type.NIL ? null : args[1].table;
 				return args[0];
 			}
@@ -648,8 +670,8 @@ public class SveInterpreter {
 		addJavaFunction("getsup", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("getsup", 1, args.length);
 				return new SveValue(args[0].table.superScope);
 			}
 		}, globalScope, "getsup(scope): Returns the super scope of the parameter scope");
@@ -657,8 +679,8 @@ public class SveInterpreter {
 		addJavaFunction("setptf", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("setptf", 2, args.length);
 				args[0].table.inter = SveInterpreter.this;
 				args[0].table.prototypeScope_f = args[1].type == Type.NIL ? null : args[1];
 				return args[0];
@@ -667,8 +689,8 @@ public class SveInterpreter {
 		addJavaFunction("getptf", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("getptf", 1, args.length);
 				return args[0].table.prototypeScope_f;
 			}
 		}, globalScope, "getptf(table): Returns the prototype of the parameter table");
@@ -676,8 +698,8 @@ public class SveInterpreter {
 		addJavaFunction("setls", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 2) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("setls", 2, args.length);
 				args[0].localScope = args[1].type == Type.NIL ? null : args[1].table;
 				return args[0];
 			}
@@ -685,8 +707,8 @@ public class SveInterpreter {
 		addJavaFunction("getls", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("getls", 1, args.length);
 				return new SveValue(args[0].localScope);
 			}
 		}, globalScope, "getls(function): Returns the defination scope of a function instance");
@@ -732,9 +754,12 @@ public class SveInterpreter {
 			
 			@Override
 			public SveValue call(SveValue[] args) throws SveRuntimeException {
-				if (args.length < 2) return new SveValue(Type.NIL);
+				checkArgs("disk.save", 2, args.length);
+				String name = args[0].getValue_str();
+				if (!name.matches("\\w+")) wrongArgs("disk.save: Illegal filename");
 				try {
-					createBCX(args[1]).write(new DataOutputStream(System.out));
+					createBCX(args[1]).write(new DataOutputStream(
+							new FileOutputStream(new File("svestorage_" + name + ".bcx"))));
 				} catch (IOException e) {
 					e.printStackTrace();
 					throw new SveRuntimeException(-1, ExceptionType.OTHER, e.getMessage());
@@ -746,8 +771,8 @@ public class SveInterpreter {
 		addJavaFunction("disk.load", new SveApiFunction() {
 			
 			@Override
-			public SveValue call(SveValue[] args) {
-				if (args.length < 1) return new SveValue(Type.NIL);
+			public SveValue call(SveValue[] args) throws SveRuntimeException {
+				checkArgs("disk.load", 1, args.length);
 				return new SveValue(args[0].localScope);
 			}
 		}, globalScope, "disk.load(name): Loads a table from the disk");
@@ -773,6 +798,19 @@ public class SveInterpreter {
 		
 	}
 	
+	private static void wrongArgs(String message) throws SveRuntimeException {
+		throw new SveRuntimeException(-1, ExceptionType.WRONG_ARGS, message);
+	}
+	
+	private static void checkArgs(String function, int required, int given) throws SveRuntimeException {
+		if (given < required) wrongArgs(function, required, given);
+	}
+	
+	private static void wrongArgs(String function, int required, int given) throws SveRuntimeException {
+		throw new SveRuntimeException(-1, ExceptionType.WRONG_ARGS, "Illegal number of arguments for " + function + ":"
+				+ " expected at least " + required + ", but got " + given);
+	}
+	
 	public Stack<String> callStack = new Stack<>();
 	public Stack<String> functionStack = new Stack<>();
 	
@@ -787,11 +825,21 @@ public class SveInterpreter {
 		callStack.pop();
 	}
 	
-	public void printStackTrace() {	
+	public Stack<String> getStackTrace() {
+		return callStack;
+	}
+	
+	public String getStackTraceAsString() {
+		String a = "";
 		for (int i = callStack.size()-1; i >= 0; i--) {
 			String position = callStack.get(i) == null ? "<unknown>" : callStack.get(i);
-			System.err.println("\t" + position);
+			a += "\t" + position + "\n";
 		}
+		return a;
+	}
+	
+	public void printStackTrace() {	
+		System.err.print(getStackTraceAsString());
 	}
 	
 	public void interpret(StartTree tree) throws SveVariableNotFoundException, SveRuntimeException {
@@ -1095,9 +1143,7 @@ public class SveInterpreter {
 					breakpoints.add(breakpoint);
 					break;
 				case "stack":
-					for (int i = callStack.size()-1; i >= 0; i--) {
-						System.err.println("\t" + callStack.get(i));
-					}
+					printStackTrace();
 					break;
 				case "run":
 					linebyline = false;
