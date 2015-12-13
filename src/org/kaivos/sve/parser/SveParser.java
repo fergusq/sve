@@ -17,7 +17,7 @@ public class SveParser {
 	
 	public static final String SVE_VERSION = "Sve 1.6 Realtime Interpreter - (c) 2015 Iikka Hauhio - All rights reserved";
 	
-	public static final char[] OPERATORS = new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '=', '&', '|', '{', '}', '.', '!', '[', ']'};
+	public static final char[] OPERATORS = new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '^', '=', '&', '|', '{', '}', '.', '!', '[', ']'};
 	public static final String[] OPERATORS2 = new String[]{"->", "=>", "==", "!=", "&&", "||", "<=", ">=", "++", "--", "::"};
 	
 	public static SveTree.StartTree parse(String file) {
@@ -37,7 +37,7 @@ public class SveParser {
 		}
 		
 		TokenScanner s = new TokenScanner();
-		s.setSpecialTokens(new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '=', '&', '|', '{', '}', '.', '!', '[', ']'});
+		s.setSpecialTokens(new char[]{';', '<', '>', '(', ')', ',', ':', '+', '-', '*', '/', '%', '^', '=', '&', '|', '{', '}', '.', '!', '[', ']'});
 		s.setBSpecialTokens(new String[]{"->", "=>", "==", "!=", "&&", "||", "<=", ">=", "++", "--", "::"});
 		s.setComments(true);
 		s.setFile(file.getAbsolutePath());

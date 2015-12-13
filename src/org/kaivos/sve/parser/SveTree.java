@@ -730,12 +730,12 @@ public class SveTree extends ParserTree {
 	}
 	
 	/*
-	 * Expression1 = {
-	 * 		EXPRESSION2 ("*"|"/"|"%") EXPRESSION2
+	 * Expression1b = {
+	 * 		EXPRESSION2 ("^") EXPRESSION2
 	 * 		| EXPRESSION2
 	 * }
 	 */
-	public static class Expression1Tree extends TreeNode {
+	public static class Expression1bTree extends TreeNode {
 
 		public enum Operator {
 			NEXT,
@@ -753,6 +753,55 @@ public class SveTree extends ParserTree {
 			first.parse(s);
 			
 			String operatorName;
+			label1: while (Arrays.asList(new String[]{"^"}).contains((operatorName = seek(s)))){
+				switch (operatorName) {
+				case "^":
+					op.add(next(s));
+					this.operator = Operator.OPERATOR;
+				
+					Expression2Tree e = new Expression2Tree();
+					e.parse(s);
+					second.add(e);
+					break;
+				default:
+					this.operator = Operator.NEXT;
+					break label1;
+				}
+			}
+			
+		}
+
+		@Override
+		public String generate(String a) {
+			return null;
+		}
+		
+	}
+	
+	/*
+	 * Expression1 = {
+	 * 		EXPRESSION1b ("*"|"/"|"%") EXPRESSION1b
+	 * 		| EXPRESSION1b
+	 * }
+	 */
+	public static class Expression1Tree extends TreeNode {
+
+		public enum Operator {
+			NEXT,
+			OPERATOR
+		}
+		public Operator operator = Operator.NEXT;
+		public ArrayList<String> op = new ArrayList<>();
+		public Expression1bTree first;
+		public ArrayList<Expression1bTree> second = new ArrayList<>();
+		
+		@Override
+		public void parse(TokenScanner s) throws SyntaxError {
+			
+			first = new Expression1bTree();
+			first.parse(s);
+			
+			String operatorName;
 			label1: while (Arrays.asList(new String[]{"*", "/", "%"}).contains((operatorName = seek(s)))){
 				switch (operatorName) {
 				case "*":
@@ -761,7 +810,7 @@ public class SveTree extends ParserTree {
 					op.add(next(s));
 					this.operator = Operator.OPERATOR;
 				
-					Expression2Tree e = new Expression2Tree();
+					Expression1bTree e = new Expression1bTree();
 					e.parse(s);
 					second.add(e);
 					break;

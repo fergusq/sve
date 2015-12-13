@@ -42,6 +42,7 @@ import org.kaivos.sve.parser.SveTree.BlockTree;
 import org.kaivos.sve.parser.SveTree.DoWhileTree;
 import org.kaivos.sve.parser.SveTree.Expression0Tree;
 import org.kaivos.sve.parser.SveTree.Expression1Tree;
+import org.kaivos.sve.parser.SveTree.Expression1bTree;
 import org.kaivos.sve.parser.SveTree.Expression2Tree;
 import org.kaivos.sve.parser.SveTree.ExpressionLogicTree;
 import org.kaivos.sve.parser.SveTree.ExpressionTree;
@@ -1329,26 +1330,26 @@ public class SveInterpreter {
 					break;
 				case "<":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.first.first.file, line.first.first.first.first.line);
-						throw new SveRuntimeException(line.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
+						callStackPush(line.first.first.first.first.first.file, line.first.first.first.first.line);
+						throw new SveRuntimeException(line.first.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue() < second.getValue());
 					break;
 				case ">":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.first.first.file, line.first.first.first.first.line);
-						throw new SveRuntimeException(line.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
+						callStackPush(line.first.first.first.first.first.file, line.first.first.first.first.line);
+						throw new SveRuntimeException(line.first.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue() > second.getValue());
 					break;
 				case "<=":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.first.first.file, line.first.first.first.first.line);
-						throw new SveRuntimeException(line.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
+						callStackPush(line.first.first.first.first.first.file, line.first.first.first.first.line);
+						throw new SveRuntimeException(line.first.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue() <= second.getValue());
 					break;
 				case ">=":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.first.first.file, line.first.first.first.first.line);
-						throw new SveRuntimeException(line.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
+						callStackPush(line.first.first.first.first.first.file, line.first.first.first.first.line);
+						throw new SveRuntimeException(line.first.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue() >= second.getValue());
 					break;
 
@@ -1378,14 +1379,14 @@ public class SveInterpreter {
 					} else if (value.type == Type.DOUBLE && second.type == Type.DOUBLE) {
 						value = new SveValue(value.getValue()+second.getValue());
 					} else {
-						callStackPush(line.first.first.first.file, line.first.first.first.line);
-						throw new SveRuntimeException(line.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
+						callStackPush(line.first.first.first.first.file, line.first.first.first.line);
+						throw new SveRuntimeException(line.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					}
 					break;
 				case "-":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.first.file, line.first.first.first.line);
-						throw new SveRuntimeException(line.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
+						callStackPush(line.first.first.first.first.file, line.first.first.first.line);
+						throw new SveRuntimeException(line.first.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue()-second.getValue());
 					break;
 
@@ -1404,28 +1405,55 @@ public class SveInterpreter {
 		switch (line.operator) {
 		case OPERATOR:
 			SveValue value;
-			Expression2Tree first = line.first;
-			value = interpretExpression2(first, scope);
+			Expression1bTree first = line.first;
+			value = interpretExpression1b(first, scope);
 			for (int i = 0; i < line.op.size(); i++) {
-				SveValue second =  interpretExpression2(line.second.get(i), scope);
+				SveValue second =  interpretExpression1b(line.second.get(i), scope);
 				switch (line.op.get(i)) {
 				case "*":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.file, line.first.first.line);
+						callStackPush(line.first.first.first.file, line.first.first.line);
 						throw new SveRuntimeException(line.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue()*second.getValue());
 					break;
 				case "/":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.file, line.first.first.line);
+						callStackPush(line.first.first.first.file, line.first.first.line);
 						throw new SveRuntimeException(line.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue()/second.getValue());
 					break;
 				case "%":
 					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
-						callStackPush(line.first.first.file, line.first.first.line);
+						callStackPush(line.first.first.first.file, line.first.first.line);
 						throw new SveRuntimeException(line.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
 					} else value = new SveValue(value.getValue()%second.getValue());
+					break;
+
+				default:
+					break;
+				}
+			}
+			return value;
+
+		default:
+			return interpretExpression1b(line.first, scope);
+		}
+	}
+	
+	public SveValue interpretExpression1b(Expression1bTree line, SveScope scope) throws SveVariableNotFoundException, SveRuntimeException {
+		switch (line.operator) {
+		case OPERATOR:
+			SveValue value;
+			Expression2Tree first = line.first;
+			value = interpretExpression2(first, scope);
+			for (int i = 0; i < line.op.size(); i++) {
+				SveValue second =  interpretExpression2(line.second.get(i), scope);
+				switch (line.op.get(i)) {
+				case "^":
+					if (value.type != Type.DOUBLE || second.type != Type.DOUBLE){
+						callStackPush(line.first.first.file, line.first.first.line);
+						throw new SveRuntimeException(line.first.first.line, ExceptionType.TYPE_COER, "Can't convert to number");
+					} else value = new SveValue(Math.pow(value.getValue(),second.getValue()));
 					break;
 
 				default:
