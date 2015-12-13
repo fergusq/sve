@@ -1225,6 +1225,8 @@ public class SveInterpreter {
 	}
 	
 	public SveValue interpretExpression(ExpressionTree line, SveScope scope) throws SveVariableNotFoundException, SveRuntimeException {
+		if (Thread.currentThread().isInterrupted())
+			return new SveValue(Type.NIL);
 		switch (line.operator) {
 		case OPERATOR:
 			SveValue value;
